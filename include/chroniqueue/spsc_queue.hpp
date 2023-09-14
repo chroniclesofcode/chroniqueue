@@ -5,7 +5,7 @@
 namespace chroniqueue {
 
 template <class T>
-class lockfree_queue {
+class spsc_queue {
 private: 
 
 private:
