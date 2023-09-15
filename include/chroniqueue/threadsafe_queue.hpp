@@ -3,6 +3,7 @@
 #include <functional>
 #include <array>
 #include <stdexcept>
+#include <mutex>
 
 namespace chroniqueue {
 
@@ -27,7 +28,11 @@ public:
     /* FUNCTIONS */
 
     void push(T item) {
-        if (full()) return;
+        _mtx.lock();
+        if (full()) {
+            _mtx.unlock();
+            return;
+        }
         buffer[write] = item;
 
         if (++write == cap) {
@@ -35,14 +40,20 @@ public:
         }
 
         _full = (read == write);
+        _mtx.unlock();
     }
 
     T front() {
-        return buffer[read];
+        _mtx.lock();
+        T ret = buffer[read];
+        _mtx.unlock();
+        return ret;
     }
 
     T pop() {
+        _mtx.lock();
         if (empty()) {
+            _mtx.unlock();
             throw std::runtime_error("Cannot pop() on empty queue.");
         }
 
@@ -52,27 +63,39 @@ public:
         }
         
         _full = false;
+        _mtx.unlock();
         return ret;
     }
 
     void reset() {
+        _mtx.lock();
         read = 0;
         write = 0;
         _full = false;
+        _mtx.unlock();
     }
 
     /* GETTERS */
 
     bool empty() {
-        return !_full && read == write;
+        _mtx.lock();
+        bool ret = !_full && read == write;
+        _mtx.unlock();
+        return ret;
     }
 
     bool full() {
-        return _full;
+        _mtx.lock();
+        bool ret = _full;
+        _mtx.unlock();
+        return ret;
     }
 
     int size() {
-        return (write >= read && !_full ? write - read : cap - read + write);
+        _mtx.lock();
+        int ret = (write >= read && !_full ? write - read : cap - read + write);
+        _mtx.unlock();
+        return ret;
     }
 
     int capacity() {
@@ -88,6 +111,7 @@ private:
     int read;
     int write;
     bool _full;
+    std::mutex _mtx;
 };
 
 }
