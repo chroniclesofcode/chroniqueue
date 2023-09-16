@@ -44,10 +44,7 @@ public:
     }
 
     T front() {
-        _mtx.lock();
-        T ret = buffer[read];
-        _mtx.unlock();
-        return ret;
+        return buffer[read];
     }
 
     T pop() {
@@ -78,24 +75,15 @@ public:
     /* GETTERS */
 
     bool empty() {
-        _mtx.lock();
-        bool ret = !_full && read == write;
-        _mtx.unlock();
-        return ret;
+        return !_full && read == write;
     }
 
     bool full() {
-        _mtx.lock();
-        bool ret = _full;
-        _mtx.unlock();
-        return ret;
+        return _full;
     }
 
     int size() {
-        _mtx.lock();
-        int ret = (write >= read && !_full ? write - read : cap - read + write);
-        _mtx.unlock();
-        return ret;
+        return (write >= read && !_full ? write - read : cap - read + write);
     }
 
     int capacity() {
