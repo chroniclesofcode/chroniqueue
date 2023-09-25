@@ -13,7 +13,6 @@
 
 BOOST_AUTO_TEST_CASE(tsq_integration_test) {
     chroniqueue::threadsafe_queue<int> q(5);
-
     // Testing is_empty and popping
     BOOST_TEST(q.empty());
     BOOST_TEST(q.size() == 0);
