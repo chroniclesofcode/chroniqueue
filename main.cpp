@@ -7,12 +7,12 @@
 #include <iterator>
 #include <algorithm>
 
-#include "chroniqueue/threadsafe_queue.hpp"
+#include "chroniqueue/mutex_queue.hpp"
 #include "chroniqueue/spsc_queue.hpp"
 #include "chroniqueue/Timer.h"
 
-BOOST_AUTO_TEST_CASE(tsq_integration_test) {
-    chroniqueue::threadsafe_queue<int> q(5);
+BOOST_AUTO_TEST_CASE(mtx_integration_test) {
+    chroniqueue::mutex_queue<int> q(5);
     // Testing is_empty and popping
     BOOST_TEST(q.empty());
     BOOST_TEST(q.size() == 0);
@@ -76,6 +76,10 @@ BOOST_AUTO_TEST_CASE(tsq_integration_test) {
     BOOST_TEST(q.pop() == 2);
     BOOST_TEST(q.pop() == 3);
     BOOST_TEST(q.empty());
+}
+
+BOOST_AUTO_TEST_CASE(spsc_integration_test) {
+    chroniqueue::spsc_queue<int> q(5);
 }
 
 int main(int argc, char **argv) {

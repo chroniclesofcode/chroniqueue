@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 #include <algorithm>
 #include <functional>
@@ -8,9 +10,9 @@
 namespace chroniqueue {
 
 template <class T>
-class threadsafe_queue {
+class mutex_queue {
 public:
-    threadsafe_queue(int size) {
+    mutex_queue(int size) {
         cap = size;
         read = 0;
         write = 0;
@@ -18,12 +20,12 @@ public:
         buffer = new T[size];
     }
 
-    ~threadsafe_queue() {
+    ~mutex_queue() {
         delete[] buffer;
     }
 
-    threadsafe_queue(const threadsafe_queue &) = delete;
-    threadsafe_queue &operator=(const threadsafe_queue &&) = delete;
+    mutex_queue(const mutex_queue &) = delete;
+    mutex_queue &operator=(const mutex_queue &&) = delete;
 
     /* FUNCTIONS */
 
