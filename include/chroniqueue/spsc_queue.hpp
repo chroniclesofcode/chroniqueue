@@ -10,14 +10,13 @@ namespace chroniqueue {
 template <class T>
 class spsc_queue {
 public: 
-    spsc_queue(int size) {
-        cap = size;
+    spsc_queue(int size): cap{size}, read{0}, write{0} {
     }
 private:
     T* buffer;
     int cap;
-    alignas(64) std::atomic<int> read(0);
-    alignas(64) std::atomic<int> write(0);
+    alignas(64) std::atomic<int> read;
+    alignas(64) std::atomic<int> write;
 };
 
 }
