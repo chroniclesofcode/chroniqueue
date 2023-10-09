@@ -13,11 +13,10 @@ template <class T>
 class mutex_queue {
 public:
     mutex_queue(int size) {
-        cap = size;
+        cap = size+1;
         read = 0;
         write = 0;
-        is_full = false;
-        buffer = new T[size];
+        buffer = new T[size+1];
     }
 
     ~mutex_queue() {
@@ -29,18 +28,17 @@ public:
 
     /* FUNCTIONS */
 
-    void push(T item) {
+    bool push(T item) {
         std::lock_guard<std::mutex> lock(_mtx);
         if (_full()) {
-            return;
+            return false;
         }
         buffer[write] = item;
 
         if (++write == cap) {
             write = 0;
         }
-
-        is_full = (read == write);
+        return true;
     }
 
     T front() {
@@ -59,7 +57,6 @@ public:
             read = 0;
         }
         
-        is_full = false;
         return ret;
     }
 
@@ -67,7 +64,6 @@ public:
         std::lock_guard<std::mutex> lock(_mtx);
         read = 0;
         write = 0;
-        is_full = false;
     }
 
     /* GETTERS */
@@ -88,26 +84,22 @@ public:
     }
 
     int capacity() {
-        std::lock_guard<std::mutex> lock(_mtx);
-        return _capacity();
+        return cap;
     }
 
 private:
     /* HELPER FUNCTIONS / LOCK-ASSUMED-HELD FUNCTIONS */
     bool _empty() {
-        return !is_full && read == write;
+        return read == write;
     }
 
     bool _full() {
-        return is_full;
+        int nextWrite = write + 1 == cap ? 0 : write + 1;
+        return nextWrite == read;
     }
 
     int _size() {
-        return (write >= read && !is_full ? write - read : cap - read + write);
-    }
-
-    int _capacity() {
-        return cap;
+        return (write >= read && !_full() ? write - read : cap - read + write);
     }
 
     /* VARIABLES */
@@ -115,7 +107,6 @@ private:
     int cap;
     int read;
     int write;
-    bool is_full;
     std::mutex _mtx;
 };
 

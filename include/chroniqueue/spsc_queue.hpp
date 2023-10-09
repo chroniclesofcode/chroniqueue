@@ -10,8 +10,47 @@ namespace chroniqueue {
 template <class T>
 class spsc_queue {
 public: 
-    spsc_queue(int size): cap{size}, read{0}, write{0} {
+    spsc_queue(int size): cap{size+1}, read{0}, write{0} {
+        buffer = new buffer[size+1];
     }
+
+    ~spsc_queue() {
+        delete[] buffer;
+    }
+
+    void push(T item) {
+        int curr = write.load(std::memory_order_relaxed);
+        int next = curr + 1 == cap ? 0 : curr + 1;
+        if (next == read.load(std::memory_order_relaxed)) {
+            return false;
+        }
+        write.fetch_add
+        buffer[curr] = item;
+    }
+
+    T front() {
+    }
+
+    T pop() {
+    }
+
+    void reset() {
+    }
+
+    bool empty() {
+
+    }
+
+    bool full() {
+    }
+
+    int size() {
+    }
+
+    int capacity() {
+        return cap-1;
+    }
+
 private:
     T* buffer;
     int cap;
