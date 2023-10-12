@@ -46,18 +46,15 @@ public:
         return buffer[read];
     }
 
-    T pop() {
+    bool pop() {
         std::lock_guard<std::mutex> lock(_mtx);
         if (_empty()) {
-            throw std::runtime_error("Cannot pop() on empty queue.");
+            return false;
         }
-
-        T ret = buffer[read];
         if (++read == cap) {
             read = 0;
         }
-        
-        return ret;
+        return true;
     }
 
     void reset() {

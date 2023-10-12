@@ -19,31 +19,43 @@ public:
     }
 
     bool push(T item) {
-        int curr = write.load(std::memory_order_relaxed);
+        int curr = write.load(std::memory_order_acquire);
         int next = curr + 1 == cap ? 0 : curr + 1;
         if (next == read.load(std::memory_order_relaxed)) {
             return false;
         }
         buffer[curr] = item;
+        write.store(next, std::memory_order_release);
+        return true;
     }
 
     T front() {
+        return buffer[read.load(std::memory_order_relaxed)];
     }
 
     T pop() {
     }
 
     void reset() {
+        read.store(0, std::memory_order_relaxed);
+        write.store(0, std::memory_order_relaxed);
     }
 
     bool empty() {
-
+        return read.load(std::memory_order_relaxed) ==
+                write.load(std::memory_order_relaxed);
     }
 
     bool full() {
+        int curr = write.load(std::memory_order_relaxed);
+        int next = curr + 1 == cap ? 0 : curr + 1;
+        return next == read.load(std::memory_order_relaxed);
     }
 
     int size() {
+        int w = write.load(std::memory_order_relaxed);
+        int r = read.load(std::memory_order_relaxed);
+        return (w >= r && !full() ? w - r : cap - r + w);
     }
 
     int capacity() {

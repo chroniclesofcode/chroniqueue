@@ -14,6 +14,7 @@
 BOOST_AUTO_TEST_CASE(mtx_integration_test) {
     chroniqueue::mutex_queue<int> q(5);
     // Testing is_empty and popping
+    int tmp = 0;
     BOOST_TEST(q.empty());
     BOOST_TEST(q.size() == 0);
     q.push(100);
@@ -37,11 +38,14 @@ BOOST_AUTO_TEST_CASE(mtx_integration_test) {
     BOOST_TEST(!q.full());
     q.push(35);
     BOOST_TEST(q.full());
-    int p1 = q.pop();
+    int p1 = q.front();
+    q.pop();
     BOOST_TEST(p1 == 25);
-    int p2 = q.pop();
+    int p2 = q.front();
+    q.pop();
     BOOST_TEST(p2 == 28);
-    int p3 = q.pop();
+    int p3 = q.front();
+    q.pop();
     BOOST_TEST(p3 == 30);
     BOOST_TEST(q.size() == 2);
     BOOST_TEST(!q.empty());
@@ -53,9 +57,12 @@ BOOST_AUTO_TEST_CASE(mtx_integration_test) {
     BOOST_TEST(q.size() == 4);
     q.push(72);
     BOOST_TEST(q.size() == 5);
-    int p4 = q.pop();
-    int p5 = q.pop();
-    int p6 = q.pop();
+    int p4 = q.front();
+    q.pop();
+    int p5 = q.front();
+    q.pop();
+    int p6 = q.front();
+    q.pop();
     BOOST_TEST(p4 == 32);
     BOOST_TEST(p5 == 35);
     BOOST_TEST(p6 == 70);
@@ -70,11 +77,23 @@ BOOST_AUTO_TEST_CASE(mtx_integration_test) {
     q.push(4); // Shouldn't run
     q.push(5); // Shouldn't run
     q.push(6); // Shouldn't run
-    BOOST_TEST(q.pop() == 71);
-    BOOST_TEST(q.pop() == 72);
-    BOOST_TEST(q.pop() == 1);
-    BOOST_TEST(q.pop() == 2);
-    BOOST_TEST(q.pop() == 3);
+    tmp = q.front();
+    q.pop();
+    BOOST_TEST(tmp == 71);
+    tmp = q.front();
+    q.pop();
+    BOOST_TEST(tmp == 72);
+    tmp = q.front();
+    q.pop();
+    BOOST_TEST(tmp == 1);
+    tmp = q.front();
+    q.pop();
+    BOOST_TEST(tmp == 2);
+    tmp = q.front();
+    q.pop();
+    BOOST_TEST(tmp == 3);
+    tmp = q.front();
+    q.pop();
     BOOST_TEST(q.empty());
 }
 
