@@ -28,7 +28,7 @@ public:
 
     /* FUNCTIONS */
 
-    bool push(T item) {
+    bool push(const T &item) {
         std::lock_guard<std::mutex> lock(_mtx);
         if (_full()) {
             return false;
@@ -46,11 +46,12 @@ public:
         return buffer[read];
     }
 
-    bool pop() {
+    bool pop(T &item) {
         std::lock_guard<std::mutex> lock(_mtx);
         if (_empty()) {
             return false;
         }
+        item = buffer[read];
         if (++read == cap) {
             read = 0;
         }

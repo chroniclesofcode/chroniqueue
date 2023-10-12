@@ -18,7 +18,7 @@ public:
         delete[] buffer;
     }
 
-    bool push(T item) {
+    bool push(const T &item) {
         int curr = write.load(std::memory_order_acquire);
         int next = curr + 1 == cap ? 0 : curr + 1;
         if (next == read.load(std::memory_order_relaxed)) {
@@ -33,7 +33,14 @@ public:
         return buffer[read.load(std::memory_order_relaxed)];
     }
 
-    T pop() {
+    T pop(T &item) {
+        int r = read.load(std::memory_order_acquire);
+        int w = write.load(std::memory_order_relaxed);
+        if (r == w) return false;
+        item = buffer[r];
+        int next = r + 1 == cap ? 0 : r + 1;
+        read.store(next, std::memory_order_release);
+        return true;
     }
 
     void reset() {
