@@ -38,6 +38,16 @@ public:
         out << stoplen << " milliseconds" << '\n';
     }
 
+    void reset(const char filename[]) {
+        out.close();
+        out.open(filename);
+        times.clear();
+        tot = 0;
+        count = 0;
+        small = 999999999;
+        big = 0;
+    }
+
     void printStats() {
         out << "\n**** STATISTICS ****\n\n";
         double mean = (double)tot / count;
