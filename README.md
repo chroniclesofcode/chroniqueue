@@ -1,4 +1,4 @@
-# chroniclist
+# chroniqueue
 
 Fast, lock-free SPSC queue implementation in C++. 
 
