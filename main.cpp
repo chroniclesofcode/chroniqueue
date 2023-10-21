@@ -6,10 +6,14 @@
 #include <iostream>
 #include <iterator>
 #include <algorithm>
+#include <thread>
+#include <functional>
 
 #include "chroniqueue/mutex_queue.hpp"
 #include "chroniqueue/spsc_queue.hpp"
 #include "chroniqueue/Timer.h"
+
+#define STATS_ON 0
 
 BOOST_AUTO_TEST_CASE(mtx_integration_test) {
     chroniqueue::mutex_queue<int> q(5);
@@ -171,56 +175,74 @@ BOOST_AUTO_TEST_CASE(spsc_integration_test) {
     BOOST_TEST(q.empty());
 }
 
+void Thread2Push(chroniqueue::spsc_queue<int> &q, int reps) {
+    for (int i = 0; i < reps; i++) {
+        q.push(i);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(spsc_simultaneous) {
+    int LO = (int)1e5;
+    int HI = (int)1e6;
+    for (int nt = 0; nt < 5; nt++) {
+        chroniqueue::spsc_queue<int> q(HI);
+        std::thread thread2(Thread2Push, std::ref(q), LO);
+        thread2.join();
+        std::cout << "size of q is: " << q.size() << '\n';
+    }
+}
+
 int main(int argc, char **argv) {
     int error_code = boost::unit_test::unit_test_main(init_unit_test, argc, argv);
     if (error_code != 0) return error_code;
+    if (STATS_ON) {
+        const int NUMCASES = (int)100;
+        int CASELIM = (int)1e6;
+        Timer t("../stats/SPSC-PushPop");
+        int tmp = 0;
+        long long sum = 0;
+        for (int i = 0; i < NUMCASES; i++) {
+            chroniqueue::spsc_queue<int> q(CASELIM);
+            t.start();
+            for (int j = 0; j < CASELIM/2; j++) {
+                q.push(j);
+            }
+            for (int j = 0; j < CASELIM/4; j++) {
+                q.pop(tmp);
+            }
+            for (int j = 0; j < CASELIM/2; j++) {
+                q.push(j);
+            }
+            while (!q.empty()) q.pop(tmp);
+            t.stop();
+            sum += tmp;
+            CASELIM--;
+        }
+        t.printStats();
+        std::cout << "DISREGARD: " << tmp << '\n';
 
-    const int NUMCASES = (int)100;
-    int CASELIM = (int)1e6;
-    Timer t("../stats/SPSC-PushPop");
-    int tmp = 0;
-    long long sum = 0;
-    for (int i = 0; i < NUMCASES; i++) {
-        chroniqueue::spsc_queue<int> q(CASELIM);
-        t.start();
-        for (int j = 0; j < CASELIM/2; j++) {
-            q.push(j);
+        CASELIM = (int)1e6;
+        t.reset("../stats/Mutex-PushPop");
+        for (int i = 0; i < NUMCASES; i++) {
+            chroniqueue::mutex_queue<int> q(CASELIM);
+            t.start();
+            for (int j = 0; j < CASELIM/2; j++) {
+                q.push(j);
+            }
+            for (int j = 0; j < CASELIM/4; j++) {
+                q.pop(tmp);
+            }
+            for (int j = 0; j < CASELIM/2; j++) {
+                q.push(j);
+            }
+            while (!q.empty()) q.pop(tmp);
+            t.stop();
+            sum += tmp;
+            CASELIM--;
         }
-        for (int j = 0; j < CASELIM/4; j++) {
-            q.pop(tmp);
-        }
-        for (int j = 0; j < CASELIM/2; j++) {
-            q.push(j);
-        }
-        while (!q.empty()) q.pop(tmp);
-        t.stop();
-        sum += tmp;
-        CASELIM--;
+        t.printStats();
+        std::cout << "DISREGARD: " << tmp << '\n';
+        std::cout << "DISREGARD SUM: " << sum << '\n';
     }
-    t.printStats();
-    std::cout << "DISREGARD: " << tmp << '\n';
-
-    CASELIM = (int)1e6;
-    t.reset("../stats/Mutex-PushPop");
-    for (int i = 0; i < NUMCASES; i++) {
-        chroniqueue::mutex_queue<int> q(CASELIM);
-        t.start();
-        for (int j = 0; j < CASELIM/2; j++) {
-            q.push(j);
-        }
-        for (int j = 0; j < CASELIM/4; j++) {
-            q.pop(tmp);
-        }
-        for (int j = 0; j < CASELIM/2; j++) {
-            q.push(j);
-        }
-        while (!q.empty()) q.pop(tmp);
-        t.stop();
-        sum += tmp;
-        CASELIM--;
-    }
-    t.printStats();
-    std::cout << "DISREGARD: " << tmp << '\n';
-    std::cout << "DISREGARD SUM: " << sum << '\n';
     return 0;
 }
