@@ -3,7 +3,7 @@
 Fast, lock-free SPSC queue implementation in C++. 
 
 TO-DO:
-- Check how to stop certain release mode optimizations for better time measurements.
+- Benchmark with multithreading
 
 DONE:
 - Initialize threadsafe queue (size)
@@ -40,3 +40,13 @@ many transactions.
 Compared against a mutex queue vs Boost/SPSC_queue. Results in /stats folder.
 Our SPSC queue was faster, by a small margin, with the mutex queue being the
 slowest, as expected. 
+
+Some issues I had: Compiler optimizations made it so that my SPSC queue was
+blazing fast even despite me trying my best to make it 'fairly' obscured
+so that the compiler wouldn't know what's going on. I even started generating
+random numbers into an array so that it would process random data... Not entirely
+sure what's going on in this case, or maybe I am underestimating my machine's
+capability and it's able to process a couple million integers in 1-2ms? 
+
+Furthermore, the times for boost and my personal SPSC queue have wildly varying times,
+which I can't figure out why it's happening, at least for singlethreaded benchmarks.

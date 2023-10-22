@@ -17,6 +17,7 @@
 #include "chroniqueue/Timer.h"
 
 #define STATS_ON 1
+#define MULTITHREAD_TEST 0
 
 BOOST_AUTO_TEST_CASE(mtx_integration_test) {
     chroniqueue::mutex_queue<int> q(5);
@@ -223,18 +224,22 @@ BOOST_AUTO_TEST_CASE(spsc_hi_lo) {
 int main(int argc, char **argv) {
     int error_code = boost::unit_test::unit_test_main(init_unit_test, argc, argv);
     if (error_code != 0) return error_code;
-    if (STATS_ON) {
+    if (STATS_ON && MULTITHREAD_TEST) {
+
+    }
+    if (STATS_ON && !MULTITHREAD_TEST) {
         const int NUMCASES = (int)100;
-        int CASELIM = (int)1e6;
-        Timer t("../stats/SPSC-PushPop");
+        const int CASELIM = (int)1e7;
+        Timer t("../stats/SPSC-PushPop-Singlethread");
         int tmp = 0;
-        long long sum = 0;
+        long long sum;
 
         std::random_device randev;
         std::mt19937 gen(randev());
-        std::uniform_int_distribution<int>  distr(1, 100000);
+        std::uniform_int_distribution<int>  distr(1, 1000);
 
         std::vector<int> rands(CASELIM);
+        sum = 0;
         for (int i = 0; i < NUMCASES; i++) {
             chroniqueue::spsc_queue<int> q(CASELIM);
             rands.clear();
@@ -242,10 +247,10 @@ int main(int argc, char **argv) {
             for (int j = 0; j < CASELIM; j++) {
                 rands.push_back(distr(gen));
             }
+            int ct = 0;
             t.start();
             // Push numbers, then pop some of them, then push more, then pop
             // till empty. While doing this, calculate the sum.
-            int ct = 0;
             for (int j = 0; j < CASELIM/2; j++) {
                 q.push(rands[ct]);
                 ct++;
@@ -263,14 +268,12 @@ int main(int argc, char **argv) {
                 sum += tmp;
             }
             t.stop();
-            CASELIM--;
         }
         t.printStats();
         std::cout << "DISREGARD: " << sum << '\n';
 
         sum = 0;
-        CASELIM = (int)1e6;
-        t.reset("../stats/Mutex-PushPop");
+        t.reset("../stats/Mutex-PushPop-Singlethread");
         for (int i = 0; i < NUMCASES; i++) {
             chroniqueue::mutex_queue<int> q(CASELIM);
             rands.clear();
@@ -278,10 +281,10 @@ int main(int argc, char **argv) {
             for (int j = 0; j < CASELIM; j++) {
                 rands.push_back(distr(gen));
             }
+            int ct = 0;
             t.start();
             // Push numbers, then pop some of them, then push more, then pop
             // till empty. While doing this, calculate the sum.
-            int ct = 0;
             for (int j = 0; j < CASELIM/2; j++) {
                 q.push(rands[ct]);
                 ct++;
@@ -299,14 +302,11 @@ int main(int argc, char **argv) {
                 sum += tmp;
             }
             t.stop();
-            CASELIM--;
         }
         t.printStats();
         std::cout << "DISREGARD: " << sum << '\n';
-
         sum = 0;
-        CASELIM = (int)1e6;
-        t.reset("../stats/Boost-PushPop");
+        t.reset("../stats/Boost-PushPop-Singlethread");
         for (int i = 0; i < NUMCASES; i++) {
             boost::lockfree::spsc_queue<int> q(CASELIM);
             rands.clear();
@@ -314,10 +314,10 @@ int main(int argc, char **argv) {
             for (int j = 0; j < CASELIM; j++) {
                 rands.push_back(distr(gen));
             }
+            int ct = 0;
             t.start();
             // Push numbers, then pop some of them, then push more, then pop
             // till empty. While doing this, calculate the sum.
-            int ct = 0;
             for (int j = 0; j < CASELIM/2; j++) {
                 q.push(rands[ct]);
                 ct++;
@@ -335,7 +335,6 @@ int main(int argc, char **argv) {
                 sum += tmp;
             }
             t.stop();
-            CASELIM--;
         }
         t.printStats();
         std::cout << "DISREGARD SUM: " << sum << '\n';
