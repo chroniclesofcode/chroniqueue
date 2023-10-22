@@ -33,7 +33,7 @@ public:
         return buffer[read.load(std::memory_order_relaxed)];
     }
 
-    T pop(T &item) {
+    bool pop(T &item) {
         int r = read.load(std::memory_order_acquire);
         int w = write.load(std::memory_order_relaxed);
         if (r == w) return false;

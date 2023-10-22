@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(spsc_integration_test) {
 
 void Thread2Push(chroniqueue::spsc_queue<int> &q, int reps) {
     for (int i = 0; i < reps; i++) {
-        q.push(i);
+        while (!q.push(i));
     }
 }
 
@@ -187,8 +187,15 @@ BOOST_AUTO_TEST_CASE(spsc_simultaneous) {
     for (int nt = 0; nt < 5; nt++) {
         chroniqueue::spsc_queue<int> q(HI);
         std::thread thread2(Thread2Push, std::ref(q), LO);
+        int tmp = 0;
+        long long tot = 0;
+        for (int i = 0; i < LO; i++) {
+            while (!q.pop(tmp));
+            tot += tmp;
+        }
         thread2.join();
-        std::cout << "size of q is: " << q.size() << '\n';
+        BOOST_TEST(tot == 4999950000);
+        BOOST_TEST(q.size() == 0);
     }
 }
 
