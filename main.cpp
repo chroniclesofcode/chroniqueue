@@ -181,10 +181,10 @@ void Thread2Push(chroniqueue::spsc_queue<int> &q, int reps) {
     }
 }
 
-BOOST_AUTO_TEST_CASE(spsc_simultaneous) {
+BOOST_AUTO_TEST_CASE(spsc_lo_hi) {
     int LO = (int)1e5;
     int HI = (int)1e6;
-    for (int nt = 0; nt < 5; nt++) {
+    for (int nt = 0; nt < 20; nt++) {
         chroniqueue::spsc_queue<int> q(HI);
         std::thread thread2(Thread2Push, std::ref(q), LO);
         int tmp = 0;
@@ -195,6 +195,24 @@ BOOST_AUTO_TEST_CASE(spsc_simultaneous) {
         }
         thread2.join();
         BOOST_TEST(tot == 4999950000);
+        BOOST_TEST(q.size() == 0);
+    }
+}
+
+BOOST_AUTO_TEST_CASE(spsc_hi_lo) {
+    int LO = (int)1e5;
+    int HI = (int)1e6;
+    for (int nt = 0; nt < 20; nt++) {
+        chroniqueue::spsc_queue<int> q(LO);
+        std::thread thread2(Thread2Push, std::ref(q), HI);
+        int tmp = 0;
+        long long tot = 0;
+        for (int i = 0; i < HI; i++) {
+            while (!q.pop(tmp));
+            tot += tmp;
+        }
+        thread2.join();
+        BOOST_TEST(tot == 499999500000);
         BOOST_TEST(q.size() == 0);
     }
 }
