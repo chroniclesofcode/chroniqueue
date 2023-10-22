@@ -2,18 +2,21 @@
 #define BOOST_TEST_NO_MAIN
 #define BOOST_TEST_ALTERNATIVE_INIT_API
 #include <boost/test/included/unit_test.hpp>
+#include <boost/lockfree/spsc_queue.hpp>
 
 #include <iostream>
 #include <iterator>
 #include <algorithm>
 #include <thread>
 #include <functional>
+#include <vector>
+#include <random>
 
 #include "chroniqueue/mutex_queue.hpp"
 #include "chroniqueue/spsc_queue.hpp"
 #include "chroniqueue/Timer.h"
 
-#define STATS_ON 0
+#define STATS_ON 1
 
 BOOST_AUTO_TEST_CASE(mtx_integration_test) {
     chroniqueue::mutex_queue<int> q(5);
@@ -226,47 +229,115 @@ int main(int argc, char **argv) {
         Timer t("../stats/SPSC-PushPop");
         int tmp = 0;
         long long sum = 0;
+
+        std::random_device randev;
+        std::mt19937 gen(randev());
+        std::uniform_int_distribution<int>  distr(1, 100000);
+
+        std::vector<int> rands(CASELIM);
         for (int i = 0; i < NUMCASES; i++) {
             chroniqueue::spsc_queue<int> q(CASELIM);
+            rands.clear();
+            // Generate random numbers
+            for (int j = 0; j < CASELIM; j++) {
+                rands.push_back(distr(gen));
+            }
             t.start();
+            // Push numbers, then pop some of them, then push more, then pop
+            // till empty. While doing this, calculate the sum.
+            int ct = 0;
             for (int j = 0; j < CASELIM/2; j++) {
-                q.push(j);
+                q.push(rands[ct]);
+                ct++;
             }
             for (int j = 0; j < CASELIM/4; j++) {
                 q.pop(tmp);
+                sum += tmp;
             }
             for (int j = 0; j < CASELIM/2; j++) {
-                q.push(j);
+                q.push(rands[ct]);
+                ct++;
             }
-            while (!q.empty()) q.pop(tmp);
+            while (!q.empty()) {
+                q.pop(tmp);
+                sum += tmp;
+            }
             t.stop();
-            sum += tmp;
             CASELIM--;
         }
         t.printStats();
-        std::cout << "DISREGARD: " << tmp << '\n';
+        std::cout << "DISREGARD: " << sum << '\n';
 
+        sum = 0;
         CASELIM = (int)1e6;
         t.reset("../stats/Mutex-PushPop");
         for (int i = 0; i < NUMCASES; i++) {
             chroniqueue::mutex_queue<int> q(CASELIM);
+            rands.clear();
+            // Generate random numbers
+            for (int j = 0; j < CASELIM; j++) {
+                rands.push_back(distr(gen));
+            }
             t.start();
+            // Push numbers, then pop some of them, then push more, then pop
+            // till empty. While doing this, calculate the sum.
+            int ct = 0;
             for (int j = 0; j < CASELIM/2; j++) {
-                q.push(j);
+                q.push(rands[ct]);
+                ct++;
             }
             for (int j = 0; j < CASELIM/4; j++) {
                 q.pop(tmp);
+                sum += tmp;
             }
             for (int j = 0; j < CASELIM/2; j++) {
-                q.push(j);
+                q.push(rands[ct]);
+                ct++;
             }
-            while (!q.empty()) q.pop(tmp);
+            while (!q.empty()) {
+                q.pop(tmp);
+                sum += tmp;
+            }
             t.stop();
-            sum += tmp;
             CASELIM--;
         }
         t.printStats();
-        std::cout << "DISREGARD: " << tmp << '\n';
+        std::cout << "DISREGARD: " << sum << '\n';
+
+        sum = 0;
+        CASELIM = (int)1e6;
+        t.reset("../stats/Boost-PushPop");
+        for (int i = 0; i < NUMCASES; i++) {
+            boost::lockfree::spsc_queue<int> q(CASELIM);
+            rands.clear();
+            // Generate random numbers
+            for (int j = 0; j < CASELIM; j++) {
+                rands.push_back(distr(gen));
+            }
+            t.start();
+            // Push numbers, then pop some of them, then push more, then pop
+            // till empty. While doing this, calculate the sum.
+            int ct = 0;
+            for (int j = 0; j < CASELIM/2; j++) {
+                q.push(rands[ct]);
+                ct++;
+            }
+            for (int j = 0; j < CASELIM/4; j++) {
+                q.pop(tmp);
+                sum += tmp;
+            }
+            for (int j = 0; j < CASELIM/2; j++) {
+                q.push(rands[ct]);
+                ct++;
+            }
+            while (!q.empty()) {
+                q.pop(tmp);
+                sum += tmp;
+            }
+            t.stop();
+            CASELIM--;
+        }
+        t.printStats();
         std::cout << "DISREGARD SUM: " << sum << '\n';
     }
     return 0;

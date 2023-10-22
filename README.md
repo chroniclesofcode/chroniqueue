@@ -3,7 +3,7 @@
 Fast, lock-free SPSC queue implementation in C++. 
 
 TO-DO:
-- Test lockfree queue actually works via multiple threads
+- Check how to stop certain release mode optimizations for better time measurements.
 
 DONE:
 - Initialize threadsafe queue (size)
@@ -17,6 +17,8 @@ DONE:
 - Add data to lockfree queue
 - Get the next value (pop) from lockfree queue
 - Check whether lockfree queue is full/empty
+- Test lockfree queue actually works via multiple threads
+- Test against Boost
 
 DISCUSSION:
 Note: I am running this on x86-64, so I am fairly certain we have atomic
@@ -34,3 +36,7 @@ To test the validity of this, we create one SPSC queue with two threads on it
 at the same time. One will push integers to it, one will pop integers off it,
 and sum them all together. We will see if any integers are 'lost' during the
 many transactions. 
+
+Compared against a mutex queue vs Boost/SPSC_queue. Results in /stats folder.
+Our SPSC queue was faster, by a small margin, with the mutex queue being the
+slowest, as expected. 
