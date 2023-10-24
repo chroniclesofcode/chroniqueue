@@ -17,7 +17,7 @@
 #include "chroniqueue/Timer.h"
 
 #define STATS_ON 1
-#define MULTITHREAD_TEST 0
+#define MULTITHREAD_TEST 1
 
 BOOST_AUTO_TEST_CASE(mtx_integration_test) {
     chroniqueue::mutex_queue<int> q(5);
@@ -221,11 +221,86 @@ BOOST_AUTO_TEST_CASE(spsc_hi_lo) {
     }
 }
 
+template<typename Q>
+void randPush(Q& q, std::vector<int> &rands) {
+    for (int r : rands) {
+        while (!q.push(r+1));
+    }
+}
+
 int main(int argc, char **argv) {
     int error_code = boost::unit_test::unit_test_main(init_unit_test, argc, argv);
     if (error_code != 0) return error_code;
     if (STATS_ON && MULTITHREAD_TEST) {
+        const int NUMCASES = (int)100;
+        const int CASELIM = (int)1e7;
+        Timer t("../stats/SPSC-PushPop-Multithread");
+        int tmp = 0;
+        long long sum;
 
+        std::random_device randev;
+        std::mt19937 gen(randev());
+        std::uniform_int_distribution<int>  distr(1, 1000);
+
+        std::vector<int> rands(CASELIM);
+        sum = 0;
+        for (int i = 0; i < NUMCASES; i++) {
+            chroniqueue::spsc_queue<int> q(CASELIM/2);
+            rands.clear();
+            for (int j = 0; j < CASELIM; j++) {
+                rands.push_back(distr(gen));
+            }
+            t.start();
+            std::thread thread2(randPush<chroniqueue::spsc_queue<int>>, std::ref(q), std::ref(rands));
+            for (int j = 0; j < CASELIM; j++) {
+                while (!q.pop(tmp));
+                sum += tmp;
+            }
+            t.stop();
+            thread2.join();
+        }
+        t.printStats();
+        std::cout << "SUM IS: " << sum << '\n';
+
+        sum = 0;
+        t.reset("../stats/Mutex-PushPop-Multithread");
+        for (int i = 0; i < NUMCASES; i++) {
+            chroniqueue::mutex_queue<int> q(CASELIM/2);
+            rands.clear();
+            for (int j = 0; j < CASELIM; j++) {
+                rands.push_back(distr(gen));
+            }
+            t.start();
+            std::thread thread2(randPush<chroniqueue::mutex_queue<int>>, std::ref(q), std::ref(rands));
+            for (int j = 0; j < CASELIM; j++) {
+                while (!q.pop(tmp));
+                sum += tmp;
+            }
+            t.stop();
+            thread2.join();
+        }
+        t.printStats();
+        std::cout << "SUM IS: " << sum << '\n';
+
+        sum = 0;
+        t.reset("../stats/Boost-PushPop-Multithread");
+        for (int i = 0; i < NUMCASES; i++) {
+            boost::lockfree::spsc_queue<int> q(CASELIM/2);
+            rands.clear();
+            for (int j = 0; j < CASELIM; j++) {
+                rands.push_back(distr(gen));
+            }
+            t.start();
+            std::thread thread2(randPush<boost::lockfree::spsc_queue<int>>, std::ref(q), std::ref(rands));
+            for (int j = 0; j < CASELIM; j++) {
+                while (!q.pop(tmp));
+                sum += tmp;
+            }
+            t.stop();
+            thread2.join();
+        }
+        t.printStats();
+        std::cout << "SUM IS: " << sum << '\n';
     }
     if (STATS_ON && !MULTITHREAD_TEST) {
         const int NUMCASES = (int)100;
