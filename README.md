@@ -40,14 +40,13 @@ many transactions.
 
 Compared against a mutex queue vs Boost/SPSC_queue. Results in /stats folder.
 Our SPSC queue was faster, by a small margin, with the mutex queue being the
-slowest, as expected. 
+slowest, as expected. This is for singlethreaded performance.
 
-Some issues I had: Compiler optimizations made it so that my SPSC queue was
-blazing fast even despite me trying my best to make it 'fairly' obscured
-so that the compiler wouldn't know what's going on. I even started generating
-random numbers into an array so that it would process random data... Not entirely
-sure what's going on in this case, or maybe I am underestimating my machine's
-capability and it's able to process a couple million integers in 1-2ms? 
+For multithreaded performance, at first, Boost was significantly faster with
+60ms vs 192ms for the same test.
 
-Furthermore, the times for boost and my personal SPSC queue have wildly varying times,
-which I can't figure out why it's happening, at least for singlethreaded benchmarks.
+An issue I had: I mixed up some of the acquire/release orderings, resulting in
+different speeds for my SPSC queue. It doesn't seem to affect the correctness of
+my code, but it probably detected that my queue was full sometimes when it's not
+really full, resulting in extra loops.
+
