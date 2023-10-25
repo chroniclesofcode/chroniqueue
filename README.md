@@ -48,5 +48,10 @@ For multithreaded performance, at first, Boost was significantly faster with
 An issue I had: I mixed up some of the acquire/release orderings, resulting in
 different speeds for my SPSC queue. It doesn't seem to affect the correctness of
 my code, but it probably detected that my queue was full sometimes when it's not
-really full, resulting in extra loops.
+really full, resulting in extra loops. The case in which this occurs is: when
+I am checking if write == read for push, I used relaxed ordering for read, so
+read could have been read before, when the queue was still full. In the meantime,
+it could have already been incremented to become write-able, but it still returned
+the old value. I added an acquire ordering on read, and it works. A similar 
+situation happened with pop, check a very old commit to see it in detail.
 
