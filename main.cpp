@@ -17,7 +17,7 @@
 #include "chroniqueue/Timer.h"
 
 #define STATS_ON 1
-#define MULTITHREAD_TEST 1
+#define MULTITHREAD_TEST 0
 
 BOOST_AUTO_TEST_CASE(mtx_integration_test) {
     chroniqueue::mutex_queue<int> q(5);

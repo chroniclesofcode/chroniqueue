@@ -10,7 +10,7 @@ namespace chroniqueue {
 template <class T>
 class spsc_queue {
 public: 
-    spsc_queue(int size): cap{size+1}, read{0}, write{0} {
+    spsc_queue(int size): cap{size+1}, read{0}, read_local{0}, write{0}, write_local{0} {
         buffer = new T[size+1];
     }
 
@@ -21,8 +21,9 @@ public:
     bool push(const T &item) {
         int curr = write.load(std::memory_order_relaxed);
         int next = curr + 1 == cap ? 0 : curr + 1;
-        if (next == read.load(std::memory_order_acquire)) {
-            return false;
+        if (next == read_local) {
+            read_local = read.load(std::memory_order_acquire);
+            if (next == read_local) return false;
         }
         buffer[curr] = item;
         write.store(next, std::memory_order_release);
@@ -35,7 +36,10 @@ public:
 
     bool pop(T &item) {
         int r = read.load(std::memory_order_relaxed);
-        if (r == write.load(std::memory_order_acquire)) return false;
+        if (r == write_local) {
+            write_local = write.load(std::memory_order_acquire);
+            if (r == write_local) return false;
+        }
         item = buffer[r];
         int next = r + 1 == cap ? 0 : r + 1;
         read.store(next, std::memory_order_release);
@@ -72,7 +76,9 @@ private:
     T* buffer;
     int cap;
     alignas(64) std::atomic<int> read;
+    alignas(64) int read_local;
     alignas(64) std::atomic<int> write;
+    alignas(64) int write_local;
 };
 
 }

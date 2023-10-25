@@ -55,3 +55,19 @@ it could have already been incremented to become write-able, but it still return
 the old value. I added an acquire ordering on read, and it works. A similar 
 situation happened with pop, check a very old commit to see it in detail.
 
+There was also a couple issues with my original implementation with just a 
+read variable and a write variable. The read and write variables are jumping from
+exclusive -> shared -> modified very often, flushing the modified buffer very
+often and resulting in slower performance. It's not exactly false sharing, but
+suffers from both threads modifying variables in each other's caches.
+
+After doing some research, the way I have chosen to solve this issue is to keep
+a local read_local and write_local variable, which is only modified by the
+thread using it (won't experience cache coherency issues...). This improved
+the runtime of my multithread test from 190ms average to ~23 second average.
+To be honest, I don't really know if I did anything wrong - such an improvement
+is incredible. This shows that cache coherency issues and cache alignment processes
+take an enormous amount of time/throughput. It is very important to optimize these
+aspects when designing for optimal performance. This small change was only a few 
+lines but made all the difference.
+
