@@ -3,7 +3,6 @@
 Fast, lock-free SPSC queue implementation in C++. 
 
 TO-DO:
-- Investigate different acquire/release orderings...
 
 DONE:
 - Initialize threadsafe queue (size)
@@ -20,6 +19,8 @@ DONE:
 - Test lockfree queue actually works via multiple threads
 - Test against Boost
 - Benchmark with multithreading
+- Investigate different acquire/release orderings...
+- Optimized cache coherency process
 
 DISCUSSION:
 Note: I am running this on x86-64, so I am fairly certain we have atomic
