@@ -29,12 +29,7 @@ Therefore, the mutexes on certain areas of the mutex
 queue CAN be removed. I don't think it will really change any of my thoughts,
 but technically the stats on the mutex queue can be faster by a fair amount.
 
-The timer is also on debug mode, since on release mode, there are a large number
-of optimizations that basically render the SPSC queue to take 2 milliseconds -
-I'm assuming it caches values of my loop and doesn't even run them at all or
-something, I'll have to investigate why the speedup is so dramatic.
-
-To test the validity of this, we create one SPSC queue with two threads on it
+To test the correctness of this, we create one SPSC queue with two threads on it
 at the same time. One will push integers to it, one will pop integers off it,
 and sum them all together. We will see if any integers are 'lost' during the
 many transactions. 
@@ -44,7 +39,7 @@ Our SPSC queue was faster, by a small margin, with the mutex queue being the
 slowest, as expected. This is for singlethreaded performance.
 
 For multithreaded performance, at first, Boost was significantly faster with
-60ms vs 192ms for the same test.
+60ms vs 192ms for the same test. Now onto trying to improve faster than boost:
 
 An issue I had: I mixed up some of the acquire/release orderings, resulting in
 different speeds for my SPSC queue. It doesn't seem to affect the correctness of
@@ -64,8 +59,12 @@ suffers from both threads modifying variables in each other's caches.
 
 After doing some research, the way I have chosen to solve this issue is to keep
 a local read_local and write_local variable, which is only modified by the
-thread using it (won't experience cache coherency issues...). This improved
-the runtime of my multithread test from 190ms average to ~23 second average.
+thread using it (won't experience cache coherency issues...). Effectively, it
+lets the readers/writers see an older version of the queue until it is full or empty.
+
+This improved the runtime of my multithread test from 190ms average to ~23 second average, as
+compared to the ~60ms runtime of boost. 
+
 To be honest, I don't really know if I did anything wrong - such an improvement
 is incredible. This shows that cache coherency issues and cache alignment processes
 take an enormous amount of time/throughput. It is very important to optimize these
